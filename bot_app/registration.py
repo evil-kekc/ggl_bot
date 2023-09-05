@@ -2,6 +2,7 @@ from typing import NamedTuple
 
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
+from aiogram.types import ReplyKeyboardMarkup
 
 from db.db_engine import Session, Results
 from bot_app.keyboard.keyboard_generator import create_keyboard
@@ -68,7 +69,8 @@ async def get_student_class(message: types.Message, state: FSMContext):
 
     student = await get_student_info(state)
 
-    keyboard = create_keyboard('Да', 'Нет')
+    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+    keyboard.add('Да').add('Нет')
 
     await message.answer(text=f'Подтвердите введенные данные:\n'
                               f'Имя: {student.student_name}\n'
@@ -99,7 +101,8 @@ async def confirmation(message: types.Message, state: FSMContext):
 
         session.commit()
 
-        keyboard = create_keyboard('14-15 лет', '16-17 лет')
+        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
+        keyboard.add('14-15 лет').add('16-18 лет')
         await message.answer(
             'Уважаемые обучающиеся! Данное анкетирование проводится с целью изучения '
             'Вашего отношения к проблеме употребления психоактивных веществ. '
