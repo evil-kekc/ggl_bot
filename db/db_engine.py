@@ -27,11 +27,11 @@ class Results(Base):
     age_category = Column(String, nullable=True, default=None)
 
     # Total results data
-    family_factor = Column(String, nullable=True, default=None)
-    psychological_factor = Column(String, nullable=True, default=None)
-    env_factor = Column(String, nullable=True, default=None)
-    school_factor = Column(String, nullable=True, default=None)
-    total_risk = Column(String, nullable=True, default=None)
+    family_factor = Column(Integer, nullable=False, default=0)
+    psychological_factor = Column(Integer, nullable=False, default=0)
+    env_factor = Column(Integer, nullable=False, default=0)
+    school_factor = Column(Integer, nullable=False, default=0)
+    total_risk = Column(Integer, nullable=False, default=0)
 
 
 Base.metadata.create_all(engine)

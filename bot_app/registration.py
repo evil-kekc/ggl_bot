@@ -104,10 +104,6 @@ async def confirmation(message: types.Message, state: FSMContext):
         keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
         keyboard.add('14-15 лет').add('16-18 лет')
         await message.answer(
-            'Уважаемые обучающиеся! Данное анкетирование проводится с целью изучения '
-            'Вашего отношения к проблеме употребления психоактивных веществ. '
-            'Внимательно прочитайте каждый вопрос и все предложенные варианты ответов к нем. '
-            'Выберите ответ, соответствующий Вашему мнению.\n'
             'Выберите Вашу возрастную категорию',
             reply_markup=keyboard)
         await state.set_state(RegistrationStates.start_survey)

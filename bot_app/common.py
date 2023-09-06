@@ -5,9 +5,9 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 
-from bot_app.keyboard.keyboard_generator import create_keyboard
+from bot_app.keyboard.keyboard_generator import create_keyboard, ANSWER_CALLBACK_DATA
 from db.db_engine import Session, Results
-from main import RegistrationStates
+from main import RegistrationStates, bot
 
 
 class Question(NamedTuple):
@@ -17,6 +17,45 @@ class Question(NamedTuple):
     answers: list
 
 
+def check_age_category(user_id: int):
+    """User age check
+
+    :param user_id: Telegram user id
+    :return: age category
+    """
+    session = Session()
+    user = session.query(Results).filter_by(user_id=user_id).first()
+
+    return user.age_category
+
+
+async def update_factor_based_on_age_and_question(age_category: str, question_number: int, state: FSMContext):
+    """Updates the factor in the user's state based on the age category and question number.
+
+    :param age_category: Age category ('14-15 years old' or '16-18 years old')
+    :param question_number: Current issue number
+    :param state: User state
+    """
+    if age_category == '14-15 лет':
+        if 1 <= question_number <= 11:
+            await state.update_data(factor='family_factor')
+        elif 12 <= question_number <= 22:
+            await state.update_data(factor='psychological_factor')
+        elif 23 <= question_number <= 28:
+            await state.update_data(factor='env_factor')
+        elif 29 <= question_number <= 35:
+            await state.update_data(factor='school_factor')
+    else:
+        if 1 <= question_number <= 11:
+            await state.update_data(factor='family_factor')
+        elif 12 <= question_number <= 16:
+            await state.update_data(factor='psychological_factor')
+        elif 17 <= question_number <= 22:
+            await state.update_data(factor='env_factor')
+        elif 23 <= question_number <= 30:
+            await state.update_data(factor='school_factor')
+
+
 async def get_question(user_id, state: FSMContext):
     """Getting a question for a user
 
@@ -24,20 +63,18 @@ async def get_question(user_id, state: FSMContext):
     :param state: state object
     :return: Question object
     """
-
-    session = Session()
-    user = session.query(Results).filter_by(user_id=user_id).first()
-    if user.age_category == '14-15 лет':
+    state_data = await state.get_data()
+    age_category = state_data.get('age_category')
+    if age_category == 'low':
         with open('bot_app/questions/14_15_questions.json', 'r') as file:
             json_data = json.load(file)
     else:
-        pass
+        with open('bot_app/questions/16_18_questions.json', 'r') as file:
+            json_data = json.load(file)
 
     questions = json_data.get('questions')
-    state_data = await state.get_data()
-    current_question_number = state_data.get('current_question')
 
-    question_data = None
+    current_question_number = state_data.get('current_question')
 
     for question in questions:
         if question.get('number') == current_question_number:
@@ -46,9 +83,43 @@ async def get_question(user_id, state: FSMContext):
                 text=question.get('text'),
                 answers=question.get('answers')
             )
-            break
+            return question_data
+    else:
+        await bot.send_message(user_id, 'Спасибо, опрос завершен! Хорошего дня :)')
+        await state.finish()
+        return
 
-    return question_data
+
+async def add_points(user_id: int, factor: str, points: str):
+    """Adding Factor Points
+
+    :param user_id: Telegram user id
+    :param factor: risk factor
+    :param points: points of factor
+    :return: Question object
+    """
+    session = Session()
+    user = session.query(Results).filter_by(user_id=user_id).first()
+
+    if factor == 'family_factor':
+        new_value = user.family_factor + int(points)
+        user.family_factor = new_value
+        session.commit()
+
+    elif factor == 'psychological_factor':
+        new_value = user.psychological_factor + int(points)
+        user.psychological_factor = new_value
+        session.commit()
+
+    elif factor == 'env_factor':
+        new_value = user.env_factor + int(points)
+        user.env_factor = new_value
+        session.commit()
+
+    elif factor == 'school_factor':
+        new_value = user.school_factor + int(points)
+        user.school_factor = new_value
+        session.commit()
 
 
 async def cmd_start(message: types.Message, state: FSMContext):
@@ -64,7 +135,9 @@ async def cmd_start(message: types.Message, state: FSMContext):
     session = Session()
     user = session.query(Results).filter_by(user_id=user_id).first()
     if user is None:
-        new_user = Results(user_id=user_id, username=username)
+        new_user = Results(
+            user_id=user_id, username=username
+        )
         session.add(new_user)
         session.commit()
     else:
@@ -81,6 +154,14 @@ async def start_survey(message: types.Message, state: FSMContext):
     :param message: message object
     :return:
     """
+    await message.answer(
+        text='Уважаемые обучающиеся! Данное анкетирование проводится с целью изучения '
+             'Вашего отношения к проблеме употребления психоактивных веществ. '
+             'Внимательно прочитайте каждый вопрос и все предложенные варианты ответов к нем. '
+             'Выберите один ответ, соответствующий Вашему мнению.\n',
+        reply_markup=ReplyKeyboardRemove()
+    )
+
     user_id = message.from_user.id
     session = Session()
     user = session.query(Results).filter_by(user_id=user_id).first()
@@ -101,9 +182,7 @@ async def start_survey(message: types.Message, state: FSMContext):
 
     question_data = await get_question(message.from_user.id, state)
 
-    if question_data.number <= 5:
-        await state.update_data(factor='family_factor')
-        # TODO: Add other factors
+    await state.update_data(factor='family_factor')
 
     data = await state.get_data()
     factor = data.get('factor')
@@ -112,8 +191,76 @@ async def start_survey(message: types.Message, state: FSMContext):
     keyboard = create_keyboard(user_id, factor, answers)
     await message.answer(question_data.text, reply_markup=keyboard)
 
-    await state.update_data(answer=question_data.answers, number=question_data.number)
+    await state.update_data(
+        answer=question_data.answers,
+        current_question=question_data.number + 1,
+        message_id=message.message_id
+    )
+
     await state.set_state(RegistrationStates.survey_question)
+
+
+async def survey_question(callback_query: types.CallbackQuery, state: FSMContext, callback_data: dict):
+    """Response processing
+
+    :param callback_query: callback_query object
+    :param state: state object
+    :param callback_data: user_id, factor, points
+    :return:
+    """
+    await callback_query.answer()
+
+    question_data = await get_question(callback_query.from_user.id, state)
+
+    age_category = check_age_category(callback_query.from_user.id)
+
+    if question_data:
+        await update_factor_based_on_age_and_question(
+            age_category=age_category,
+            question_number=question_data.number,
+            state=state
+        )
+
+        answers = question_data.answers
+
+        user_id = callback_data['user_id']
+        factor = callback_data['factor']
+        points = callback_data['points']
+
+        await add_points(
+            user_id=user_id,
+            factor=factor,
+            points=points
+        )
+
+        keyboard = create_keyboard(callback_query.from_user.id, factor, answers)
+        await bot.send_message(callback_query.from_user.id, question_data.text, reply_markup=keyboard)
+
+        await state.update_data(
+            answer=question_data.answers, current_question=question_data.number + 1,
+            message_id=callback_query.message.message_id
+        )
+
+        await bot.delete_message(
+            chat_id=callback_query.from_user.id, message_id=callback_query.message.message_id
+        )
+
+        await state.set_state(RegistrationStates.survey_question)
+    else:
+        user_id = callback_data['user_id']
+        factor = callback_data['factor']
+        points = callback_data['points']
+
+        await add_points(
+            user_id=user_id,
+            factor=factor,
+            points=points
+        )
+
+        await bot.delete_message(
+            chat_id=callback_query.from_user.id, message_id=callback_query.message.message_id
+        )
+        # TODO: Add set all risks and total risk
 
 
 def register_handlers_common(dp: Dispatcher):
@@ -124,3 +271,5 @@ def register_handlers_common(dp: Dispatcher):
     """
     dp.register_message_handler(cmd_start, commands=['start'])
     dp.register_message_handler(start_survey, state=RegistrationStates.start_survey)
+    dp.register_callback_query_handler(survey_question, ANSWER_CALLBACK_DATA.filter(),
+                                       state=RegistrationStates.survey_question)
