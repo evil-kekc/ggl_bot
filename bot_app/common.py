@@ -6,8 +6,11 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 
 from bot_app.keyboard.keyboard_generator import create_keyboard, ANSWER_CALLBACK_DATA
-from db.db_engine import Session, Results
+from db.db_engine import Session, Results, set_results
 from main import RegistrationStates, bot
+
+AGE_CATEGORY_LOW = '14-15 лет'
+AGE_CATEGORY_HIGH = '16-18 лет'
 
 
 class Question(NamedTuple):
@@ -36,24 +39,26 @@ async def update_factor_based_on_age_and_question(age_category: str, question_nu
     :param question_number: Current issue number
     :param state: User state
     """
-    if age_category == '14-15 лет':
-        if 1 <= question_number <= 11:
-            await state.update_data(factor='family_factor')
-        elif 12 <= question_number <= 22:
-            await state.update_data(factor='psychological_factor')
-        elif 23 <= question_number <= 28:
-            await state.update_data(factor='env_factor')
-        elif 29 <= question_number <= 35:
-            await state.update_data(factor='school_factor')
-    else:
-        if 1 <= question_number <= 11:
-            await state.update_data(factor='family_factor')
-        elif 12 <= question_number <= 16:
-            await state.update_data(factor='psychological_factor')
-        elif 17 <= question_number <= 22:
-            await state.update_data(factor='env_factor')
-        elif 23 <= question_number <= 30:
-            await state.update_data(factor='school_factor')
+
+    age_category_mapping = {
+        AGE_CATEGORY_LOW: {
+            (1, 11): 'family_factor',
+            (12, 22): 'psychological_factor',
+            (23, 28): 'env_factor',
+            (29, 35): 'school_factor',
+        },
+        AGE_CATEGORY_HIGH: {
+            (1, 11): 'family_factor',
+            (12, 22): 'psychological_factor',
+            (23, 28): 'env_factor',
+            (29, 35): 'school_factor',
+        }
+    }
+    factors_dict = age_category_mapping.get(age_category)
+    for number_range, factor in factors_dict.items():
+        for number in number_range:
+            if number == question_number:
+                await state.update_data(factor=factor)
 
 
 async def get_question(user_id, state: FSMContext):
@@ -152,6 +157,7 @@ async def start_survey(message: types.Message, state: FSMContext):
     """Test start
 
     :param message: message object
+    :param state: state object
     :return:
     """
     await message.answer(
@@ -166,13 +172,13 @@ async def start_survey(message: types.Message, state: FSMContext):
     session = Session()
     user = session.query(Results).filter_by(user_id=user_id).first()
 
-    if message.text == '14-15 лет':
-        user.age_category = '14-15 лет'
+    if message.text == AGE_CATEGORY_LOW:
+        user.age_category = AGE_CATEGORY_LOW
         session.commit()
 
         await state.update_data(current_question=1, age_category='low')
-    elif message.text == '16-18 лет':
-        user.age_category = '16-18 лет'
+    elif message.text == AGE_CATEGORY_HIGH:
+        user.age_category = AGE_CATEGORY_HIGH
         session.commit()
 
         await state.update_data(current_question=1, age_category='high')
@@ -237,7 +243,8 @@ async def survey_question(callback_query: types.CallbackQuery, state: FSMContext
         await bot.send_message(callback_query.from_user.id, question_data.text, reply_markup=keyboard)
 
         await state.update_data(
-            answer=question_data.answers, current_question=question_data.number + 1,
+            answer=question_data.answers,
+            current_question=question_data.number + 1,
             message_id=callback_query.message.message_id
         )
 
@@ -251,16 +258,18 @@ async def survey_question(callback_query: types.CallbackQuery, state: FSMContext
         factor = callback_data['factor']
         points = callback_data['points']
 
+        await bot.delete_message(
+            chat_id=callback_query.from_user.id,
+            message_id=callback_query.message.message_id
+        )
+
         await add_points(
             user_id=user_id,
             factor=factor,
             points=points
         )
 
-        await bot.delete_message(
-            chat_id=callback_query.from_user.id, message_id=callback_query.message.message_id
-        )
-        # TODO: Add set all risks and total risk
+        set_results(user_id=user_id)
 
 
 def register_handlers_common(dp: Dispatcher):

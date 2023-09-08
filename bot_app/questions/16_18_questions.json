@@ -13,7 +13,7 @@
             "number": 2,
             "text": "Какой вид музыки вы предпочитаете?",
             "answers": [
-                {"text": "Рок", "points": 4},
+                {"text": "Рок", "points": 40},
                 {"text": "Поп", "points": 2},
                 {"text": "Классика", "points": 5}
             ]
