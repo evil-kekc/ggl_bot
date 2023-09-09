@@ -1,4 +1,5 @@
 import os
+from typing import Union
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String
@@ -13,7 +14,7 @@ Session = sessionmaker(bind=engine)
 Base = declarative_base()
 
 
-def set_results(user_id: int | str):
+def set_results(user_id: Union[int, str]):
     """Calculate and update result values for a user.
 
     :param user_id: User ID

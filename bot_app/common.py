@@ -42,10 +42,10 @@ async def update_factor_based_on_age_and_question(age_category: str, question_nu
 
     age_category_mapping = {
         AGE_CATEGORY_LOW: {
-            (1, 11): 'family_factor',
-            (12, 22): 'psychological_factor',
-            (23, 28): 'env_factor',
-            (29, 35): 'school_factor',
+            (1, 13): 'family_factor',
+            (14, 30): 'psychological_factor',
+            (31, 46): 'env_factor',
+            (47, 53): 'school_factor',
         },
         AGE_CATEGORY_HIGH: {
             (1, 11): 'family_factor',
@@ -56,9 +56,11 @@ async def update_factor_based_on_age_and_question(age_category: str, question_nu
     }
     factors_dict = age_category_mapping.get(age_category)
     for number_range, factor in factors_dict.items():
-        for number in number_range:
-            if number == question_number:
-                await state.update_data(factor=factor)
+        low = number_range[0]
+        high = number_range[1]
+        if low <= question_number <= high:
+            await state.update_data(factor=factor)
+            break
 
 
 async def get_question(user_id, state: FSMContext):
@@ -214,8 +216,6 @@ async def survey_question(callback_query: types.CallbackQuery, state: FSMContext
     :param callback_data: user_id, factor, points
     :return:
     """
-    await callback_query.answer()
-
     question_data = await get_question(callback_query.from_user.id, state)
 
     age_category = check_age_category(callback_query.from_user.id)
@@ -229,8 +229,10 @@ async def survey_question(callback_query: types.CallbackQuery, state: FSMContext
 
         answers = question_data.answers
 
+        data = await state.get_data()
+        factor = data['factor']
+
         user_id = callback_data['user_id']
-        factor = callback_data['factor']
         points = callback_data['points']
 
         await add_points(
@@ -238,6 +240,8 @@ async def survey_question(callback_query: types.CallbackQuery, state: FSMContext
             factor=factor,
             points=points
         )
+
+        await callback_query.answer()
 
         keyboard = create_keyboard(callback_query.from_user.id, factor, answers)
         await bot.send_message(callback_query.from_user.id, question_data.text, reply_markup=keyboard)
@@ -268,6 +272,8 @@ async def survey_question(callback_query: types.CallbackQuery, state: FSMContext
             factor=factor,
             points=points
         )
+
+        await callback_query.answer()
 
         set_results(user_id=user_id)
 
