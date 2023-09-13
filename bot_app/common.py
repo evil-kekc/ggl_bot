@@ -48,10 +48,10 @@ async def update_factor_based_on_age_and_question(age_category: str, question_nu
             (47, 53): 'school_factor',
         },
         AGE_CATEGORY_HIGH: {
-            (1, 11): 'family_factor',
-            (12, 22): 'psychological_factor',
-            (23, 28): 'env_factor',
-            (29, 35): 'school_factor',
+            (1, 16): 'family_factor',
+            (17, 30): 'psychological_factor',
+            (31, 47): 'env_factor',
+            (48, 54): 'school_factor',
         }
     }
     factors_dict = age_category_mapping.get(age_category)

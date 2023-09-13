@@ -1,0 +1,7 @@
+.idea
+*__pycache__
+*.md
+.venv
+.git
+.gitignore
+*.log
