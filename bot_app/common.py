@@ -5,7 +5,7 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 
-from bot_app.keyboard.keyboard_generator import create_keyboard, ANSWER_CALLBACK_DATA
+from bot_app.keyboard.keyboard_generator import create_answer_keyboard, ANSWER_CALLBACK_DATA
 from db.db_engine import Session, Results, set_results
 from main import RegistrationStates, bot
 
@@ -92,9 +92,11 @@ async def get_question(user_id, state: FSMContext):
             )
             return question_data
     else:
-        await bot.send_message(user_id, 'Спасибо, опрос завершен! Хорошего дня :)')
+        await bot.send_message(
+            user_id,
+            'Спасибо, опрос завершен! Хорошего дня :)\n\nНашли ошибку или баг? Нажми /bug_report'
+        )
         await state.finish()
-        return
 
 
 async def add_points(user_id: int, factor: str, points: str):
@@ -196,7 +198,7 @@ async def start_survey(message: types.Message, state: FSMContext):
     factor = data.get('factor')
     answers = question_data.answers
 
-    keyboard = create_keyboard(user_id, factor, answers)
+    keyboard = create_answer_keyboard(user_id, factor, answers)
     await message.answer(question_data.text, reply_markup=keyboard)
 
     await state.update_data(
@@ -243,7 +245,7 @@ async def survey_question(callback_query: types.CallbackQuery, state: FSMContext
 
         await callback_query.answer()
 
-        keyboard = create_keyboard(callback_query.from_user.id, factor, answers)
+        keyboard = create_answer_keyboard(callback_query.from_user.id, factor, answers)
         await bot.send_message(callback_query.from_user.id, question_data.text, reply_markup=keyboard)
 
         await state.update_data(

@@ -5,7 +5,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardMarkup
 
 from db.db_engine import Session, Results
-from bot_app.keyboard.keyboard_generator import create_keyboard
+from bot_app.keyboard.keyboard_generator import create_answer_keyboard
 from main import RegistrationStates
 
 
