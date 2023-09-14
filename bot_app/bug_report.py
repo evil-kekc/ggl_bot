@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from bot_app.keyboard.keyboard_generator import create_bug_report_keyboard, create_reply_keyboard, \
     BUG_REPORT_CALLBACK_DATA
+from db.db_engine import Session, BugReport, add_bug_report, edit_bug_report_status, add_user, Results
 from main import ReportAnswer, bot, Report
 
 
@@ -33,6 +34,15 @@ async def start_report_mess(message: types.Message):
     :type message: types.Message
     """
     cancel_button = create_reply_keyboard()
+
+    session = Session()
+    user = session.query(Results).filter_by(user_id=message.from_user.id).first()
+    if user is None:
+        add_user(
+            user_id=message.from_user.id,
+            username=message.from_user.username
+        )
+
     await bot.send_message(
         message.from_user.id, f'Опишите проблему, с которой вы столкнулись',
         reply_markup=cancel_button
@@ -40,7 +50,7 @@ async def start_report_mess(message: types.Message):
     await Report.send_report.set()
 
 
-async def choice(message: types.Message, state: FSMContext):
+async def send_report(message: types.Message, state: FSMContext):
     """Handle user's choice and send a bug report to the admin.
 
     :param message: The user's message with their choice.
@@ -55,6 +65,11 @@ async def choice(message: types.Message, state: FSMContext):
         os.getenv('ADMIN_ID'),
         message.from_user.id, message.message_id,
         reply_markup=send_report_answer
+    )
+
+    add_bug_report(
+        user_id=message.from_user.id,
+        description=message.text
     )
 
     await message.reply(
@@ -100,6 +115,11 @@ async def send_answer(message: types.Message, state: FSMContext):
     user_id = data['id']
     message_id = data['message_id']
 
+    edit_bug_report_status(
+        user_id=user_id,
+        status='Closed'
+    )
+
     await bot.delete_message(message.from_user.id, message_id)
 
     await bot.send_message(user_id, message.text)
@@ -107,12 +127,12 @@ async def send_answer(message: types.Message, state: FSMContext):
 
 
 def bug_report_register_handlers(dp: Dispatcher):
-    dp.register_message_handler(cancel, commands=['отмена', 'cancel'])
-    dp.register_message_handler(cancel, Text(equals='отмена', ignore_case=True))
+    dp.register_message_handler(cancel, commands=['отмена', 'cancel'], state='*')
+    dp.register_message_handler(cancel, Text(equals='отмена', ignore_case=True), state='*')
 
     dp.register_message_handler(start_report_mess, commands='bug_report')
 
-    dp.register_message_handler(choice, state=Report.send_report)
+    dp.register_message_handler(send_report, state=Report.send_report)
 
     dp.register_message_handler(send_answer, state=ReportAnswer.send_answer)
 

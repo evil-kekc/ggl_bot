@@ -53,7 +53,7 @@ def create_bug_report_keyboard(user_id: int | str) -> types.InlineKeyboardMarkup
     return keyboard
 
 
-def create_reply_keyboard(*buttons: Union[list, tuple]) -> ReplyKeyboardMarkup:
+def create_reply_keyboard(*buttons: str) -> ReplyKeyboardMarkup:
     """Creates a ReplyKeyboardMarkup with the specified buttons.
 
     :param buttons: List of buttons that need to be added to the keyboard.

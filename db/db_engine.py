@@ -2,8 +2,8 @@ import os
 from typing import Union
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 
 load_dotenv()
 DATABASE_URL = (f'postgresql://{os.getenv("POSTGRES_USER_NAME")}:{os.getenv("POSTGRES_USER_PASSWORD")}'
@@ -95,6 +95,55 @@ def set_results(user_id: Union[int, str]):
     session.commit()
 
 
+def add_bug_report(user_id: Union[int, str], description: str):
+    """Add a bug report to the database.
+
+    :param user_id: User ID
+    :type user_id: int | str
+    :param description: Bug report text
+    :type description: str
+    """
+    session = Session()
+    bug_report = BugReport(
+        user_id=user_id,
+        description=description
+    )
+    session.add(bug_report)
+    session.commit()
+
+
+def edit_bug_report_status(user_id: Union[int, str], status: str):
+    """Edit the status of a bug report in the database.
+
+    :param user_id: User ID
+    :type user_id: int | str
+    :param status: Bug report status
+    :type status: str
+    """
+    session = Session()
+    bug_report = session.query(BugReport).filter_by(user_id=user_id).first()
+
+    if bug_report:
+        bug_report.report_status = status
+        session.commit()
+
+
+def add_user(user_id: Union[int, str], username: str):
+    """Добавление пользователя в базу данных
+
+    :param user_id: User ID
+    :type user_id: int | str
+    :param username: Username
+    :type username: str
+    """
+    session = Session()
+    new_user = Results(
+        user_id=user_id, username=username
+    )
+    session.add(new_user)
+    session.commit()
+
+
 class Results(Base):
     __tablename__ = 'results'
 
@@ -121,6 +170,20 @@ class Results(Base):
     env_factor_result = Column(String, nullable=True)
     school_factor_result = Column(String, nullable=True)
     total_risk_result = Column(String, nullable=True)
+
+    bug_reports = relationship('BugReport', back_populates='user', cascade='all, delete-orphan')
+
+
+class BugReport(Base):
+    __tablename__ = 'bug_reports'
+
+    report_id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('results.user_id'))
+    report_status = Column(String, nullable=False, default='Open')
+    description = Column(String, nullable=False)
+
+    # Define a relationship between BugReports and Results tables
+    user = relationship('Results', back_populates='bug_reports')
 
 
 Base.metadata.create_all(engine)

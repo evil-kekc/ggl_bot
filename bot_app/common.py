@@ -6,7 +6,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 
 from bot_app.keyboard.keyboard_generator import create_answer_keyboard, ANSWER_CALLBACK_DATA
-from db.db_engine import Session, Results, set_results
+from db.db_engine import Session, Results, set_results, add_user
 from main import RegistrationStates, bot
 
 AGE_CATEGORY_LOW = '14-15 лет'
@@ -144,13 +144,12 @@ async def cmd_start(message: types.Message, state: FSMContext):
     session = Session()
     user = session.query(Results).filter_by(user_id=user_id).first()
     if user is None:
-        new_user = Results(
-            user_id=user_id, username=username
+        add_user(
+            user_id=user_id,
+            username=username
         )
-        session.add(new_user)
-        session.commit()
     else:
-        await message.answer('Извините, Вы уже прошли тестирование')
+        await message.answer('Извините, Вы уже прошли тестирование', reply_markup=ReplyKeyboardRemove())
         return
 
     await message.answer("Добро пожаловать! Введите Ваше имя", reply_markup=ReplyKeyboardRemove())

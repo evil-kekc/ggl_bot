@@ -2,10 +2,10 @@ from typing import NamedTuple
 
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
-from aiogram.types import ReplyKeyboardMarkup
+from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 from db.db_engine import Session, Results
-from bot_app.keyboard.keyboard_generator import create_answer_keyboard
+from bot_app.keyboard.keyboard_generator import create_answer_keyboard, create_reply_keyboard
 from main import RegistrationStates
 
 
@@ -101,14 +101,13 @@ async def confirmation(message: types.Message, state: FSMContext):
 
         session.commit()
 
-        keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-        keyboard.add('14-15 лет').add('16-18 лет')
+        keyboard = create_reply_keyboard('14-15 лет', '16-18 лет')
         await message.answer(
             'Выберите Вашу возрастную категорию',
             reply_markup=keyboard)
         await state.set_state(RegistrationStates.start_survey)
     else:
-        await message.answer('Повторите регистрацию. Введите Ваше имя')
+        await message.answer('Повторите регистрацию. Введите Ваше имя', reply_markup=ReplyKeyboardRemove())
         await state.set_state(RegistrationStates.get_name)
 
 
