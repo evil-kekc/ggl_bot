@@ -21,78 +21,79 @@ def set_results(user_id: Union[int, str]):
     :type user_id: int | str
     """
     session = Session()
-    user = session.query(Results).filter_by(user_id=user_id).first()
+    with session:
+        user = session.query(Results).filter_by(user_id=user_id).first()
 
-    user.total_risk = (
-            user.family_factor +
-            user.psychological_factor +
-            user.env_factor +
-            user.school_factor
-    )
+        user.total_risk = (
+                user.family_factor +
+                user.psychological_factor +
+                user.env_factor +
+                user.school_factor
+        )
 
-    if user.age_category == '14-15 лет':
-        factors = {
-            'family_factor': {
-                (0, 15): 'Низкая',
-                (16, 26): 'Средняя',
-                (27, 100): 'Высокая',
-            },
-            'psychological_factor': {
-                (0, 20): 'Низкая',
-                (21, 37): 'Средняя',
-                (38, 100): 'Высокая',
-            },
-            'env_factor': {
-                (0, 24): 'Низкая',
-                (25, 41): 'Средняя',
-                (42, 100): 'Высокая',
-            },
-            'school_factor': {
-                (0, 9): 'Низкая',
-                (10, 14): 'Средняя',
-                (15, 100): 'Высокая',
-            },
-            'total_risk': {
-                (0, 68): 'Низкая',
-                (69, 118): 'Средняя',
-                (119, 200): 'Высокая',
-            },
-        }
-    else:
-        factors = {
-            'family_factor': {
-                (0, 17): 'Низкая',
-                (18, 33): 'Средняя',
-                (34, 100): 'Высокая',
-            },
-            'psychological_factor': {
-                (0, 16): 'Низкая',
-                (17, 37): 'Средняя',
-                (38, 100): 'Высокая',
-            },
-            'env_factor': {
-                (0, 22): 'Низкая',
-                (23, 42): 'Средняя',
-                (43, 100): 'Высокая',
-            },
-            'school_factor': {
-                (0, 10): 'Низкая',
-                (11, 16): 'Средняя',
-                (17, 100): 'Высокая',
-            },
-            'total_risk': {
-                (0, 65): 'Низкая',
-                (66, 128): 'Средняя',
-                (129, 200): 'Высокая',
-            },
-        }
-    for factor, results in factors.items():
-        for (low, high), result in results.items():
-            if low <= getattr(user, factor) <= high:
-                setattr(user, factor + '_result', result)
-                break
+        if user.age_category == '14-15 лет':
+            factors = {
+                'family_factor': {
+                    (0, 15): 'Низкая',
+                    (16, 26): 'Средняя',
+                    (27, 100): 'Высокая',
+                },
+                'psychological_factor': {
+                    (0, 20): 'Низкая',
+                    (21, 37): 'Средняя',
+                    (38, 100): 'Высокая',
+                },
+                'env_factor': {
+                    (0, 24): 'Низкая',
+                    (25, 41): 'Средняя',
+                    (42, 100): 'Высокая',
+                },
+                'school_factor': {
+                    (0, 9): 'Низкая',
+                    (10, 14): 'Средняя',
+                    (15, 100): 'Высокая',
+                },
+                'total_risk': {
+                    (0, 68): 'Низкая',
+                    (69, 118): 'Средняя',
+                    (119, 200): 'Высокая',
+                },
+            }
+        else:
+            factors = {
+                'family_factor': {
+                    (0, 17): 'Низкая',
+                    (18, 33): 'Средняя',
+                    (34, 100): 'Высокая',
+                },
+                'psychological_factor': {
+                    (0, 16): 'Низкая',
+                    (17, 37): 'Средняя',
+                    (38, 100): 'Высокая',
+                },
+                'env_factor': {
+                    (0, 22): 'Низкая',
+                    (23, 42): 'Средняя',
+                    (43, 100): 'Высокая',
+                },
+                'school_factor': {
+                    (0, 10): 'Низкая',
+                    (11, 16): 'Средняя',
+                    (17, 100): 'Высокая',
+                },
+                'total_risk': {
+                    (0, 65): 'Низкая',
+                    (66, 128): 'Средняя',
+                    (129, 200): 'Высокая',
+                },
+            }
+        for factor, results in factors.items():
+            for (low, high), result in results.items():
+                if low <= getattr(user, factor) <= high:
+                    setattr(user, factor + '_result', result)
+                    break
 
-    session.commit()
+        session.commit()
 
 
 def add_bug_report(user_id: Union[int, str], description: str):
@@ -104,12 +105,13 @@ def add_bug_report(user_id: Union[int, str], description: str):
     :type description: str
     """
     session = Session()
-    bug_report = BugReport(
-        user_id=user_id,
-        description=description
-    )
-    session.add(bug_report)
-    session.commit()
+    with session:
+        bug_report = BugReport(
+            user_id=user_id,
+            description=description
+        )
+        session.add(bug_report)
+        session.commit()
 
 
 def edit_bug_report_status(user_id: Union[int, str], status: str):
@@ -121,11 +123,12 @@ def edit_bug_report_status(user_id: Union[int, str], status: str):
     :type status: str
     """
     session = Session()
-    bug_report = session.query(BugReport).filter_by(user_id=user_id).first()
+    with session:
+        bug_report = session.query(BugReport).filter_by(user_id=user_id).first()
 
-    if bug_report:
-        bug_report.report_status = status
-        session.commit()
+        if bug_report:
+            bug_report.report_status = status
+            session.commit()
 
 
 def add_user(user_id: Union[int, str], username: str):
@@ -137,11 +140,12 @@ def add_user(user_id: Union[int, str], username: str):
     :type username: str
     """
     session = Session()
-    new_user = Results(
-        user_id=user_id, username=username
-    )
-    session.add(new_user)
-    session.commit()
+    with session:
+        new_user = Results(
+            user_id=user_id, username=username
+        )
+        session.add(new_user)
+        session.commit()
 
 
 class Results(Base):

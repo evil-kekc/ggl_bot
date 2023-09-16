@@ -93,19 +93,20 @@ async def confirmation(message: types.Message, state: FSMContext):
         user_id = message.from_user.id
 
         session = Session()
-        user = session.query(Results).filter_by(user_id=user_id).first()
+        with session:
+            user = session.query(Results).filter_by(user_id=user_id).first()
 
-        user.first_name = student.student_name
-        user.last_name = student.student_last_name
-        user.student_class = student.student_class
+            user.first_name = student.student_name
+            user.last_name = student.student_last_name
+            user.student_class = student.student_class
 
-        session.commit()
+            session.commit()
 
-        keyboard = create_reply_keyboard('14-15 лет', '16-18 лет')
-        await message.answer(
-            'Выберите Вашу возрастную категорию',
-            reply_markup=keyboard)
-        await state.set_state(RegistrationStates.start_survey)
+            keyboard = create_reply_keyboard('14-15 лет', '16-18 лет')
+            await message.answer(
+                'Выберите Вашу возрастную категорию',
+                reply_markup=keyboard)
+            await state.set_state(RegistrationStates.start_survey)
     else:
         await message.answer('Повторите регистрацию. Введите Ваше имя', reply_markup=ReplyKeyboardRemove())
         await state.set_state(RegistrationStates.get_name)

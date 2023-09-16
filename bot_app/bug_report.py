@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from bot_app.keyboard.keyboard_generator import create_bug_report_keyboard, create_reply_keyboard, \
     BUG_REPORT_CALLBACK_DATA
-from db.db_engine import Session, BugReport, add_bug_report, edit_bug_report_status, add_user, Results
+from db.db_engine import Session, add_bug_report, edit_bug_report_status, add_user, Results
 from main import ReportAnswer, bot, Report
 
 
@@ -36,12 +36,13 @@ async def start_report_mess(message: types.Message):
     cancel_button = create_reply_keyboard()
 
     session = Session()
-    user = session.query(Results).filter_by(user_id=message.from_user.id).first()
-    if user is None:
-        add_user(
-            user_id=message.from_user.id,
-            username=message.from_user.username
-        )
+    with session:
+        user = session.query(Results).filter_by(user_id=message.from_user.id).first()
+        if user is None:
+            add_user(
+                user_id=message.from_user.id,
+                username=message.from_user.username
+            )
 
     await bot.send_message(
         message.from_user.id, f'Опишите проблему, с которой вы столкнулись',

@@ -27,9 +27,10 @@ def check_age_category(user_id: int):
     :return: age category
     """
     session = Session()
-    user = session.query(Results).filter_by(user_id=user_id).first()
+    with session:
+        user = session.query(Results).filter_by(user_id=user_id).first()
 
-    return user.age_category
+        return user.age_category
 
 
 async def update_factor_based_on_age_and_question(age_category: str, question_number: int, state: FSMContext):
@@ -108,27 +109,28 @@ async def add_points(user_id: int, factor: str, points: str):
     :return: Question object
     """
     session = Session()
-    user = session.query(Results).filter_by(user_id=user_id).first()
+    with session:
+        user = session.query(Results).filter_by(user_id=user_id).first()
 
-    if factor == 'family_factor':
-        new_value = user.family_factor + int(points)
-        user.family_factor = new_value
-        session.commit()
+        if factor == 'family_factor':
+            new_value = user.family_factor + int(points)
+            user.family_factor = new_value
+            session.commit()
 
-    elif factor == 'psychological_factor':
-        new_value = user.psychological_factor + int(points)
-        user.psychological_factor = new_value
-        session.commit()
+        elif factor == 'psychological_factor':
+            new_value = user.psychological_factor + int(points)
+            user.psychological_factor = new_value
+            session.commit()
 
-    elif factor == 'env_factor':
-        new_value = user.env_factor + int(points)
-        user.env_factor = new_value
-        session.commit()
+        elif factor == 'env_factor':
+            new_value = user.env_factor + int(points)
+            user.env_factor = new_value
+            session.commit()
 
-    elif factor == 'school_factor':
-        new_value = user.school_factor + int(points)
-        user.school_factor = new_value
-        session.commit()
+        elif factor == 'school_factor':
+            new_value = user.school_factor + int(points)
+            user.school_factor = new_value
+            session.commit()
 
 
 async def cmd_start(message: types.Message, state: FSMContext):
@@ -142,15 +144,16 @@ async def cmd_start(message: types.Message, state: FSMContext):
     username = message.from_user.username
 
     session = Session()
-    user = session.query(Results).filter_by(user_id=user_id).first()
-    if user is None:
-        add_user(
-            user_id=user_id,
-            username=username
-        )
-    else:
-        await message.answer('Извините, Вы уже прошли тестирование', reply_markup=ReplyKeyboardRemove())
-        return
+    with session:
+        user = session.query(Results).filter_by(user_id=user_id).first()
+        if user is None:
+            add_user(
+                user_id=user_id,
+                username=username
+            )
+        else:
+            await message.answer('Извините, Вы уже прошли тестирование', reply_markup=ReplyKeyboardRemove())
+            return
 
     await message.answer("Добро пожаловать! Введите Ваше имя", reply_markup=ReplyKeyboardRemove())
     await state.set_state(RegistrationStates.get_name)
@@ -173,40 +176,41 @@ async def start_survey(message: types.Message, state: FSMContext):
 
     user_id = message.from_user.id
     session = Session()
-    user = session.query(Results).filter_by(user_id=user_id).first()
+    with session:
+        user = session.query(Results).filter_by(user_id=user_id).first()
 
-    if message.text == AGE_CATEGORY_LOW:
-        user.age_category = AGE_CATEGORY_LOW
-        session.commit()
+        if message.text == AGE_CATEGORY_LOW:
+            user.age_category = AGE_CATEGORY_LOW
+            session.commit()
 
-        await state.update_data(current_question=1, age_category='low')
-    elif message.text == AGE_CATEGORY_HIGH:
-        user.age_category = AGE_CATEGORY_HIGH
-        session.commit()
+            await state.update_data(current_question=1, age_category='low')
+        elif message.text == AGE_CATEGORY_HIGH:
+            user.age_category = AGE_CATEGORY_HIGH
+            session.commit()
 
-        await state.update_data(current_question=1, age_category='high')
-    else:
-        await message.answer('Выберите один из предложенных вариантов')
-        return
+            await state.update_data(current_question=1, age_category='high')
+        else:
+            await message.answer('Выберите один из предложенных вариантов')
+            return
 
-    question_data = await get_question(message.from_user.id, state)
+        question_data = await get_question(message.from_user.id, state)
 
-    await state.update_data(factor='family_factor')
+        await state.update_data(factor='family_factor')
 
-    data = await state.get_data()
-    factor = data.get('factor')
-    answers = question_data.answers
+        data = await state.get_data()
+        factor = data.get('factor')
+        answers = question_data.answers
 
-    keyboard = create_answer_keyboard(user_id, factor, answers)
-    await message.answer(question_data.text, reply_markup=keyboard)
+        keyboard = create_answer_keyboard(user_id, factor, answers)
+        await message.answer(question_data.text, reply_markup=keyboard)
 
-    await state.update_data(
-        answer=question_data.answers,
-        current_question=question_data.number + 1,
-        message_id=message.message_id
-    )
+        await state.update_data(
+            answer=question_data.answers,
+            current_question=question_data.number + 1,
+            message_id=message.message_id
+        )
 
-    await state.set_state(RegistrationStates.survey_question)
+        await state.set_state(RegistrationStates.survey_question)
 
 
 async def survey_question(callback_query: types.CallbackQuery, state: FSMContext, callback_data: dict):
