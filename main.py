@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO)
 dp.middleware.setup(LoggingMiddleware())
 
 HOST_URL = os.getenv('HOST_URL')
-WEBHOOK_PATH = f"/bot/{API_TOKEN}"
+WEBHOOK_PATH = f"/webhook"
 WEBHOOK_URL = HOST_URL + WEBHOOK_PATH
 
 app = FastAPI()
@@ -93,6 +93,15 @@ async def on_shutdown():
     """
     await bot.session.close()
     await bot.delete_webhook()
+
+
+@app.get('/info')
+async def home_page():
+    """GET request to getting info about bot running
+
+    :return: info about bot running
+    """
+    return 'Bot running successfully!'
 
 
 if __name__ == "__main__":
