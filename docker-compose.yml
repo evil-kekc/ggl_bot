@@ -5,6 +5,10 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/code/logs/
     env_file:
       - .env
     network_mode: "bridge"

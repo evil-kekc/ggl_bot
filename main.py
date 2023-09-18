@@ -1,58 +1,105 @@
 import logging
 import os
 
-from aiogram import Bot, Dispatcher
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+import uvicorn
+from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from dotenv import load_dotenv
+from aiogram.types import BotCommand
+from fastapi import FastAPI
 
-from middlewares.throttling import ThrottlingMiddleware
+from bot_app.bot_main import API_TOKEN, storage
+from bot_app.bug_report import bug_report_register_handlers
+from bot_app.common import register_handlers_common
+from bot_app.registration import register_handlers_registration
+from logs.logger import get_logger
 
-load_dotenv()
-API_TOKEN = os.getenv('BOT_TOKEN')
-
-storage = MemoryStorage()
+logger = get_logger(
+    logger_name='aiogram',
+    log_file_name='logs/ggl_bot.log'
+)
 
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.INFO)
 dp.middleware.setup(LoggingMiddleware())
 
+HOST_URL = os.getenv('HOST_URL')
+WEBHOOK_PATH = f"/bot/{API_TOKEN}"
+WEBHOOK_URL = HOST_URL + WEBHOOK_PATH
 
-class RegistrationStates(StatesGroup):
-    get_name = State()
-    get_last_name = State()
-    get_class = State()
-    confirmation = State()
-    start_survey = State()
-    survey_question = State()
+app = FastAPI()
 
 
-class ReportAnswer(StatesGroup):
-    send_answer = State()
+async def set_commands(bot_: Bot):
+    """Set commands for bot
+
+    :param bot_: Bot class instance
+    :return:
+    """
+    commands = [
+        BotCommand(command='/start', description='Начало работы'),
+    ]
+
+    await bot_.set_my_commands(commands)
 
 
-class Report(StatesGroup):
-    send_report = State()
+async def bot_main():
+    """Applies all bot settings
 
-
-if __name__ == '__main__':
-    from aiogram import executor
-    from bot_app.registration import register_handlers_registration
-    from bot_app.common import register_handlers_common
-    from bot_app.bug_report import bug_report_register_handlers
-    from logs.logger import get_logger
-
-    get_logger(
-        logger_name='aiogram',
-        log_file_name='logs/ggl_bot.log'
-    )
-
-    dp.middleware.setup(ThrottlingMiddleware())
+    :return:
+    """
+    logger.info('Starting bot')
 
     register_handlers_common(dp)
     register_handlers_registration(dp)
     bug_report_register_handlers(dp)
 
-    executor.start_polling(dp, skip_updates=True)
+    await set_commands(bot)
+
+
+@app.on_event("startup")
+async def on_startup():
+    """Setting up a webhook
+
+    :return:
+    """
+    webhook_info = await bot.get_webhook_info()
+    if webhook_info.url != WEBHOOK_URL:
+        await bot.set_webhook(
+            url=WEBHOOK_URL,
+            drop_pending_updates=True
+        )
+
+
+@app.post(WEBHOOK_PATH)
+async def bot_webhook(update: dict):
+    """Getting Telegram updates
+
+    :param update: Telegram update
+    :return:
+    """
+    telegram_update = types.Update(**update)
+    Dispatcher.set_current(dp)
+    Bot.set_current(bot)
+    await bot_main()
+    await dp.process_update(telegram_update)
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    """Closing session and delete webhook
+
+    :return:
+    """
+    await bot.session.close()
+    await bot.delete_webhook()
+
+
+if __name__ == "__main__":
+    APP_HOST = os.getenv('APP_HOST')
+    APP_PORT = int(os.getenv('APP_PORT'))
+    uvicorn.run(
+        app,
+        host=APP_HOST,
+        port=APP_PORT
+    )
