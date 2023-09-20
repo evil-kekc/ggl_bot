@@ -74,10 +74,10 @@ async def get_question(user_id, state: FSMContext):
     state_data = await state.get_data()
     age_category = state_data.get('age_category')
     if age_category == 'low':
-        with open('bot_app/questions/14_15_questions.json', 'r') as file:
+        with open('./questions/14_15_questions.json', 'r') as file:
             json_data = json.load(file)
     else:
-        with open('bot_app/questions/16_18_questions.json', 'r') as file:
+        with open('./questions/16_18_questions.json', 'r') as file:
             json_data = json.load(file)
 
     questions = json_data.get('questions')
