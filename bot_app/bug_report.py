@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from bot_app.keyboard.keyboard_generator import create_bug_report_keyboard, create_reply_keyboard, \
     BUG_REPORT_CALLBACK_DATA
 from db.db_engine import Session, add_bug_report, edit_bug_report_status, add_user, Results
-from bot_app.bot_main import ReportAnswer, bot, Report
+from bot_main import ReportAnswer, bot, Report
 
 
 async def cancel(message: types.Message, state: FSMContext):

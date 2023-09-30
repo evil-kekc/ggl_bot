@@ -7,7 +7,7 @@ from aiogram.types import ReplyKeyboardRemove
 
 from bot_app.keyboard.keyboard_generator import create_answer_keyboard, ANSWER_CALLBACK_DATA
 from db.db_engine import Session, Results, set_results, add_user
-from bot_app.bot_main import RegistrationStates, bot
+from bot_main import RegistrationStates, bot
 
 AGE_CATEGORY_LOW = '14-15 лет'
 AGE_CATEGORY_HIGH = '16-18 лет'

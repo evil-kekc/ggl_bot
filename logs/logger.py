@@ -14,7 +14,7 @@ def get_logger(logger_name: str, log_file_name: str):
     aiogram_logger = logging.getLogger(logger_name)
     aiogram_logger.setLevel(logging.INFO)
     log_file_handler = logging.FileHandler(log_file_name)
-    log_file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    log_file_handler.setFormatter(logging.Formatter('%(levelname)s - %(asctime)s - %(name)s - %(message)s'))
     aiogram_logger.addHandler(log_file_handler)
 
     return aiogram_logger

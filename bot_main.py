@@ -7,8 +7,6 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from dotenv import load_dotenv
 
-from middlewares.throttling import ThrottlingMiddleware
-
 load_dotenv()
 API_TOKEN = os.getenv('BOT_TOKEN')
 
@@ -48,8 +46,6 @@ if __name__ == '__main__':
         logger_name='aiogram',
         log_file_name='logs/ggl_bot.log'
     )
-
-    dp.middleware.setup(ThrottlingMiddleware())
 
     register_handlers_common(dp)
     register_handlers_registration(dp)

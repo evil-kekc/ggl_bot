@@ -6,7 +6,7 @@ from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 
 from db.db_engine import Session, Results
 from bot_app.keyboard.keyboard_generator import create_reply_keyboard
-from bot_app.bot_main import RegistrationStates
+from bot_main import RegistrationStates
 
 
 class Student(NamedTuple):

@@ -19,12 +19,12 @@ services:
   telegram-bot:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.webhook
     restart: always
     volumes:
       - ${PWD}/logs:/code/logs/
     env_file:
-      - .env
+      - .env.prod
     networks:
       - bot
 

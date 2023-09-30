@@ -7,7 +7,7 @@ from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.types import BotCommand
 from fastapi import FastAPI
 
-from bot_app.bot_main import API_TOKEN, storage
+from bot_main import API_TOKEN, storage
 from bot_app.bug_report import bug_report_register_handlers
 from bot_app.common import register_handlers_common
 from bot_app.registration import register_handlers_registration

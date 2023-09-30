@@ -1,0 +1,17 @@
+version: '3.9'
+services:
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.polling
+    restart: always
+    volumes:
+      - ${PWD}/logs:/code/logs/
+    env_file:
+      - .env.prod
+    networks:
+      - bot
+
+networks:
+  bot:
+    driver: "bridge"
