@@ -5,6 +5,8 @@ COPY requirements.txt /code/
 COPY . /code/
 
 RUN pip install --no-cache-dir -r requirements.txt && \
-    apt-get update -y
+    apt-get update -y && \
+    apt-get install -y curl && \
+    alembic upgrade head
 
 CMD ["python", "bot_main.py"]
