@@ -4,13 +4,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.polling
-    restart: always
+    restart: on-failure
     volumes:
       - ${PWD}/logs:/code/logs/
     env_file:
       - .env.prod
     networks:
       - bot
+    healthcheck:
+      test: curl --fail https://api.telegram.org/bot0123456789:ABCDEFGHIGKLMNOPQRST/getMe || exit 1
+      interval: 1m
+      retries: 5
+      timeout: 10s
+      start_period: 20s
+
 
 networks:
   bot:
