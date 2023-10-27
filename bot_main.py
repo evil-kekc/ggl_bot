@@ -40,12 +40,6 @@ if __name__ == '__main__':
     from bot_app.registration import register_handlers_registration
     from bot_app.common import register_handlers_common
     from bot_app.bug_report import bug_report_register_handlers
-    from logs.logger import get_logger
-
-    get_logger(
-        logger_name='aiogram',
-        log_file_name='logs/ggl_bot.log'
-    )
 
     register_handlers_common(dp)
     register_handlers_registration(dp)

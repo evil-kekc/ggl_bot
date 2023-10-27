@@ -38,10 +38,10 @@ Launch the application in one of the following ways:
 - Polling
     ```bash
     # Using polling
-    docker-compose -f docker-compose.polling.yml up
+    docker-compose -f docker-compose.polling.yml up -d
     ```
 - Webhook (to launch a webhook you need to obtain SSL certificates, you can see how to do this [here](SSL.md))
     ```bash
     # Using webhook
-    docker-compose -f docker-compose.webhook.yml up
+    docker-compose -f docker-compose.webhook.yml up -d
     ```
