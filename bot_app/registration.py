@@ -4,9 +4,14 @@ from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 
-from db.db_engine import Session, Results
 from bot_app.keyboard.keyboard_generator import create_reply_keyboard
 from bot_main import RegistrationStates
+from logs.logger import get_logger
+
+logger = get_logger(
+    logger_name='aiogram',
+    log_file_name='logs/ggl_bot.log'
+)
 
 
 class Student(NamedTuple):
@@ -16,11 +21,11 @@ class Student(NamedTuple):
     student_class: str
 
 
-async def get_student_info(state: FSMContext):
+async def get_student_info(state: FSMContext) -> Student:
     """Getting information about a student
 
     :param state: state object
-    :return: student object
+    :return: Student object
     """
     data = await state.get_data()
     student = Student(
@@ -88,25 +93,25 @@ async def confirmation(message: types.Message, state: FSMContext):
     :param state: state object
     :return:
     """
+    from db.db_engine import User
+
     if message.text == 'Да':
         student = await get_student_info(state)
         user_id = message.from_user.id
-
-        session = Session()
-        with session:
-            user = session.query(Results).filter_by(user_id=user_id).first()
-
-            user.first_name = student.student_name
-            user.last_name = student.student_last_name
-            user.student_class = student.student_class
-
-            session.commit()
+        try:
+            user = User(
+                user_id=user_id
+            )
+            user.add_user_info(student)
 
             keyboard = create_reply_keyboard('14-15 лет', '16-18 лет')
             await message.answer(
                 'Выберите Вашу возрастную категорию',
                 reply_markup=keyboard)
             await state.set_state(RegistrationStates.start_survey)
+        except Exception as ex:
+            logger.error(ex)
+
     else:
         await message.answer('Повторите регистрацию. Введите Ваше имя', reply_markup=ReplyKeyboardRemove())
         await state.set_state(RegistrationStates.get_name)

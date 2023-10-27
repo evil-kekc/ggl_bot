@@ -6,8 +6,8 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import ReplyKeyboardRemove
 
 from bot_app.keyboard.keyboard_generator import create_answer_keyboard, ANSWER_CALLBACK_DATA
-from db.db_engine import Session, Results, set_results, add_user
 from bot_main import RegistrationStates, bot
+from db.db_engine import Session, Results, add_user
 
 AGE_CATEGORY_LOW = '14-15 лет'
 AGE_CATEGORY_HIGH = '16-18 лет'
@@ -74,10 +74,10 @@ async def get_question(user_id, state: FSMContext):
     state_data = await state.get_data()
     age_category = state_data.get('age_category')
     if age_category == 'low':
-        with open('./questions/14_15_questions.json', 'r') as file:
+        with open('bot_app/questions/14_15_questions.json', 'r') as file:
             json_data = json.load(file)
     else:
-        with open('./questions/16_18_questions.json', 'r') as file:
+        with open('bot_app/questions/16_18_questions.json', 'r') as file:
             json_data = json.load(file)
 
     questions = json_data.get('questions')
@@ -98,39 +98,6 @@ async def get_question(user_id, state: FSMContext):
             'Спасибо, опрос завершен! Хорошего дня :)\n\nНашли ошибку или баг? Нажми /bug_report'
         )
         await state.finish()
-
-
-async def add_points(user_id: int, factor: str, points: str):
-    """Adding Factor Points
-
-    :param user_id: Telegram user id
-    :param factor: risk factor
-    :param points: points of factor
-    :return: Question object
-    """
-    session = Session()
-    with session:
-        user = session.query(Results).filter_by(user_id=user_id).first()
-
-        if factor == 'family_factor':
-            new_value = user.family_factor + int(points)
-            user.family_factor = new_value
-            session.commit()
-
-        elif factor == 'psychological_factor':
-            new_value = user.psychological_factor + int(points)
-            user.psychological_factor = new_value
-            session.commit()
-
-        elif factor == 'env_factor':
-            new_value = user.env_factor + int(points)
-            user.env_factor = new_value
-            session.commit()
-
-        elif factor == 'school_factor':
-            new_value = user.school_factor + int(points)
-            user.school_factor = new_value
-            session.commit()
 
 
 async def cmd_start(message: types.Message, state: FSMContext):
@@ -221,6 +188,8 @@ async def survey_question(callback_query: types.CallbackQuery, state: FSMContext
     :param callback_data: user_id, factor, points
     :return:
     """
+    from db.db_engine import User
+
     question_data = await get_question(callback_query.from_user.id, state)
 
     age_category = check_age_category(callback_query.from_user.id)
@@ -240,10 +209,12 @@ async def survey_question(callback_query: types.CallbackQuery, state: FSMContext
         user_id = callback_data['user_id']
         points = callback_data['points']
 
-        await add_points(
-            user_id=user_id,
+        user = User(
+            user_id=user_id
+        )
+        user.edit_factor(
             factor=factor,
-            points=points
+            value=points
         )
 
         await callback_query.answer()
@@ -272,15 +243,16 @@ async def survey_question(callback_query: types.CallbackQuery, state: FSMContext
             message_id=callback_query.message.message_id
         )
 
-        await add_points(
-            user_id=user_id,
+        user = User(
+            user_id=user_id
+        )
+        user.edit_factor(
             factor=factor,
-            points=points
+            value=points
         )
 
         await callback_query.answer()
-
-        set_results(user_id=user_id)
+        user.set_results()
 
 
 def register_handlers_common(dp: Dispatcher):

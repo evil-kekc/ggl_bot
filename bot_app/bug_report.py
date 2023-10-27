@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 
 from bot_app.keyboard.keyboard_generator import create_bug_report_keyboard, create_reply_keyboard, \
     BUG_REPORT_CALLBACK_DATA
-from db.db_engine import Session, add_bug_report, edit_bug_report_status, add_user, Results
 from bot_main import ReportAnswer, bot, Report
+from db.db_engine import Session, Results, User
 
 
 async def cancel(message: types.Message, state: FSMContext):
@@ -37,10 +37,12 @@ async def start_report_mess(message: types.Message):
 
     session = Session()
     with session:
-        user = session.query(Results).filter_by(user_id=message.from_user.id).first()
-        if user is None:
-            add_user(
-                user_id=message.from_user.id,
+        user_exists = session.query(Results).filter_by(user_id=message.from_user.id).first()
+        if user_exists is None:
+            user = User(
+                user_id=message.from_user.id
+            )
+            user.add_user(
                 username=message.from_user.username
             )
 
@@ -68,8 +70,10 @@ async def send_report(message: types.Message, state: FSMContext):
         reply_markup=send_report_answer
     )
 
-    add_bug_report(
-        user_id=message.from_user.id,
+    user = User(
+        user_id=message.from_user.id
+    )
+    user.add_bug_report(
         description=message.text
     )
 
@@ -116,8 +120,10 @@ async def send_answer(message: types.Message, state: FSMContext):
     user_id = data['id']
     message_id = data['message_id']
 
-    edit_bug_report_status(
-        user_id=user_id,
+    user = User(
+        user_id=message.from_user.id
+    )
+    user.edit_bug_report_status(
         status='Closed'
     )
 

@@ -8,7 +8,7 @@ services:
     volumes:
       - ${PWD}/logs:/code/logs/
     env_file:
-      - .env.prod
+      - .env
     networks:
       - bot
     healthcheck:
