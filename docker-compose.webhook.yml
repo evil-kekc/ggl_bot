@@ -23,6 +23,7 @@ services:
       start_period: 40s
 
   telegram-bot:
+    container_name: ggl_bot_webhook
     build:
       context: .
       dockerfile: Dockerfile.webhook
@@ -35,6 +36,7 @@ services:
       - bot
 
   certbot:
+    container_name: certbot
     image: certbot/certbot:latest
     volumes:
       - ${PWD}/certbot/www/:/var/www/certbot/:rw

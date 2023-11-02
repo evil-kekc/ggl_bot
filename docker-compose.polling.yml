@@ -1,10 +1,11 @@
 version: '3.9'
 services:
   telegram-bot:
+    container_name: ggl_bot_polling
     build:
       context: .
       dockerfile: Dockerfile.polling
-    restart: on-failure
+    restart: always
     volumes:
       - ${PWD}/logs:/code/logs/
     env_file:
@@ -12,7 +13,7 @@ services:
     networks:
       - bot
     healthcheck:
-      test: curl --fail https://api.telegram.org/bot0123456789:ABCDEFGHIGKLMNOPQRST/getMe || exit 1
+      test: curl --fail https://api.telegram.org/bot${BOT_TOKEN}/getMe || exit 1
       interval: 1m
       retries: 5
       timeout: 10s
